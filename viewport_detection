@@ -1,0 +1,50 @@
+<script>
+// This script needs to be injected before the closing </body> tag of the page
+// It will send SiteSpect events, similar to existing event tracking
+// In the form of /__ssobj/track?event=viewportChange&from=[mobile|table|desktop|largeDesktop]]&to=[mobile|table|desktop|largeDesktop]
+// Hits on the correspondig metric can be used to segment the data
+document.addEventListener('DOMContentLoaded', () => {
+    // Define the viewports here
+    const queryStrings = {
+        mobile: '(max-width: 599px)',
+        tablet: '(min-width: 600px) and (max-width: 904px)',
+        desktop: '(min-width: 905px) and (max-width: 1064px)',
+        largeDesktop: '(min-width: 1065px)' // Kismet: Added a category for viewports larger than 1064px
+    };
+
+    const mediaQueries = Object.entries(queryStrings).map(([key, query]) => {
+        const mq = window.matchMedia(query);
+        mq.addListener(handleViewportChange);
+        return [key, mq];
+    });
+
+    const mediaQueriesMap = Object.fromEntries(mediaQueries);
+
+    const getViewport = (queries) => 
+        Object.entries(queries).find(([_, mq]) => mq.matches)?.[0];
+
+    let currentViewport;
+
+    function handleViewportChange() {
+        const newViewport = getViewport(mediaQueriesMap);
+        if (newViewport && newViewport !== currentViewport) {
+            window._stsp = window._stsp || [];
+            window._stsp.push({
+                event: 'viewportChange',
+                from: currentViewport,
+                to: newViewport
+            })
+            console.log('Viewport changed from', currentViewport, 'to', newViewport);
+            currentViewport = newViewport;
+        }
+    }
+
+    function onResize() {
+        handleViewportChange();
+    }
+
+    handleViewportChange(); // Initial check
+    window.addEventListener('resize', onResize); // Resize event listener
+});
+</script>
+</body>
